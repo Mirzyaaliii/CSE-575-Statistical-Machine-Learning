@@ -8,6 +8,10 @@ import matplotlib.pyplot as plt
 
 
 # Helper Functions
+def backgroundClip(img, thresh = 1.0):
+    mask = np.sum(img,axis=2)<thresh
+    return img[np.ix_(mask.any(1),mask.any(0))]
+
 def fetch_spectograms(path):
     X = []
     y = []
@@ -18,6 +22,7 @@ def fetch_spectograms(path):
         for num, item in enumerate(data_items):
             item_path = dir_path / item
             img = plt.imread(item_path)[:,:,:3]
+            img = backgroundClip(img)
             X.append(img)
             y.append(folder)
             print(f"\rLoaded {num+1} files in {folder}",end="")
@@ -53,6 +58,6 @@ if __name__ == "__main__":
     DATA_PATH = pathlib.Path("D:\\Datasets\\GTZAN\\Data\\images_original")
     # Loading Data
     X,y = fetch_spectograms(DATA_PATH)
-    
-    np.save("../X.npy",X)
-    np.save("../y.npy",y)
+
+    np.save("../data_X.npy",X)
+    np.save("../data_y.npy",y)
