@@ -18,7 +18,7 @@ def encode_target(y):
     return y, labels
 
 
-def split_index(y, train_split=0.7, val_split=0.15, random_state=0):
+def split_index(y, train_split=0.6, val_split=0.2, random_state=0):
     n_samples = len(y)
     X = np.arange(n_samples)
 
