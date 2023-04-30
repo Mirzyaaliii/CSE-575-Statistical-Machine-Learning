@@ -8,7 +8,7 @@ from PIL import Image
 from urllib.request import urlretrieve
 from zipfile import ZipFile
 
-from sklearn.preprocessing import OneHotEncoder
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.model_selection import train_test_split
 
 
@@ -19,23 +19,23 @@ def encode_target(y):
     return y, labels
 
 
-def split_index(y, train_split=0.6, val_split=0.2, random_state=0):
+def split_data(X, y, train_split=0.6, val_split=0.2, random_state=0):
     n_samples = len(y)
-    X = np.arange(n_samples)
+    indices = np.arange(n_samples)
 
-    X_train, X_test, y_train, y_test = train_test_split(X,
-                                                        y,
-                                                        train_size=round(train_split * n_samples),
-                                                        stratify=y,
-                                                        random_state=random_state)
+    indices_train, indices_test, y_train, y_test = train_test_split(indices,
+                                                                    y,
+                                                                    train_size=round(train_split * n_samples),
+                                                                    stratify=y,
+                                                                    random_state=random_state)
 
-    X_val, X_test, y_val, y_test = train_test_split(X_test,
-                                                    y_test,
-                                                    train_size=round(val_split * n_samples),
-                                                    stratify=y_test,
-                                                    random_state=random_state)
+    indices_val, indices_test, y_val, y_test = train_test_split(indices_test,
+                                                                y_test,
+                                                                train_size=round(val_split * n_samples),
+                                                                stratify=y_test,
+                                                                random_state=random_state)
 
-    return X_train, X_val, X_test
+    return X[indices_train], X[indices_val], X[indices_test], y_train, y_val, y_test
 
 
 def get_data_ANN(random_state=0):
@@ -48,9 +48,17 @@ def get_data_ANN(random_state=0):
     y = df.loc[:, df.columns == 'label'].to_numpy()
     y, labels = encode_target(y)
 
-    train_index, val_index, test_index = split_index(y, random_state=random_state)
+    # split into train, validation, and test sets
+    X_train, X_val, X_test, y_train, y_val, y_test = split_data(X, y, random_state=random_state)
 
-    return X[train_index], X[val_index], X[test_index], y[train_index], y[val_index], y[test_index], labels
+    # standard scaling
+    scaler = StandardScaler()
+
+    X_train = scaler.fit_transform(X_train)
+    X_val = scaler.transform(X_val)
+    X_test = scaler.transform(X_test)
+
+    return X_train, X_val, X_test, y_train, y_val, y_test, labels
 
 
 def get_data_CNN(cropped=False, random_state=0):
@@ -84,9 +92,10 @@ def get_data_CNN(cropped=False, random_state=0):
     y = np.array(y, ndmin=2).T
     y, labels = encode_target(y)
 
-    train_index, val_index, test_index = split_index(y, random_state=random_state)
+    # split into train, validation, and test sets
+    X_train, X_val, X_test, y_train, y_val, y_test = split_data(X, y, random_state=random_state)
 
-    return X[train_index], X[val_index], X[test_index], y[train_index], y[val_index], y[test_index], labels
+    return X_train, X_val, X_test, y_train, y_val, y_test, labels
 
 
 def get_data_LSTM(random_state=0):
@@ -114,9 +123,25 @@ def get_data_LSTM(random_state=0):
     y = np.array(y)[:, np.newaxis]
     y, labels = encode_target(y)
 
-    train_index, val_index, test_index = split_index(y, random_state=random_state)
+    # split into train, validation, and test sets
+    X_train, X_val, X_test, y_train, y_val, y_test = split_data(X, y, random_state=random_state)
 
-    return X[train_index], X[val_index], X[test_index], y[train_index], y[val_index], y[test_index], labels
+    # standard scaling
+    scaler = StandardScaler()
+
+    train_shape = X_train.shape
+    train_new_shape = X_train.shape[0] * X_train.shape[1], X_train.shape[2]
+    X_train = scaler.fit_transform(X_train.reshape(train_new_shape)).reshape(train_shape)
+
+    val_shape = X_val.shape
+    val_new_shape = X_val.shape[0] * X_val.shape[1], X_val.shape[2]
+    X_val = scaler.transform(X_val.reshape(val_new_shape)).reshape(val_shape)
+
+    test_shape = X_test.shape
+    test_new_shape = X_test.shape[0] * X_test.shape[1], X_test.shape[2]
+    X_test = scaler.transform(X_test.reshape(test_new_shape)).reshape(test_shape)
+
+    return X_train, X_val, X_test, y_train, y_val, y_test, labels
 
 
 def get_data(model, random_state=0):
