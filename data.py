@@ -6,7 +6,16 @@ import pandas as pd
 from PIL import Image
 from urllib.request import urlretrieve
 from zipfile import ZipFile
+
+from sklearn.preprocessing import OneHotEncoder
 from sklearn.model_selection import train_test_split
+
+
+def encode_target(y):
+    encoder = OneHotEncoder(sparse_output=False)
+    y = encoder.fit_transform(y)
+    labels = encoder.categories_[0]
+    return y, labels
 
 
 def split_index(y, train_split=0.7, val_split=0.15, random_state=0):
@@ -36,10 +45,11 @@ def get_data_ANN(random_state=0):
 
     X = df.loc[:, df.columns != 'label'].to_numpy()
     y = df.loc[:, df.columns == 'label'].to_numpy()
+    y, labels = encode_target(y)
 
     train_index, val_index, test_index = split_index(y, random_state=random_state)
 
-    return X[train_index], X[val_index], X[test_index], y[train_index], y[val_index], y[test_index]
+    return X[train_index], X[val_index], X[test_index], y[train_index], y[val_index], y[test_index], labels
 
 
 def get_data_CNN(cropped=False, random_state=0):
@@ -54,7 +64,7 @@ def get_data_CNN(cropped=False, random_state=0):
     with ZipFile('spectrogram.zip', 'r') as zip:
         for name in zip.namelist():
             genre = name.split('/')[0]
-            file_name = name.split('/')[1]
+            # file_name = name.split('/')[1]
 
             image_data = zip.read(name)
             image = Image.open(io.BytesIO(image_data))
@@ -69,10 +79,11 @@ def get_data_CNN(cropped=False, random_state=0):
 
     X = np.array(X)
     y = np.array(y, ndmin=2).T
+    y, labels = encode_target(y)
 
     train_index, val_index, test_index = split_index(y, random_state=random_state)
 
-    return X[train_index], X[val_index], X[test_index], y[train_index], y[val_index], y[test_index]
+    return X[train_index], X[val_index], X[test_index], y[train_index], y[val_index], y[test_index], labels
 
 
 def get_data_LSTM(random_state=0):
@@ -98,10 +109,11 @@ def get_data_LSTM(random_state=0):
 
     X = np.stack(X)
     y = np.array(y)[:, np.newaxis]
+    y, labels = encode_target(y)
 
     train_index, val_index, test_index = split_index(y, random_state=random_state)
 
-    return X[train_index], X[val_index], X[test_index], y[train_index], y[val_index], y[test_index]
+    return X[train_index], X[val_index], X[test_index], y[train_index], y[val_index], y[test_index], labels
 
 
 def get_data(model, random_state=0):
