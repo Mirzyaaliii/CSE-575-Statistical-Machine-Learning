@@ -1,5 +1,6 @@
 import os
 import io
+import tempfile
 import numpy as np
 import pandas as pd
 
@@ -53,15 +54,17 @@ def get_data_ANN(random_state=0):
 
 
 def get_data_CNN(cropped=False, random_state=0):
-    if not os.path.isfile('spectrogram.zip'):
+    zip_path = tempfile.gettempdir() + '/spectrogram.zip'
+
+    if not os.path.isfile(zip_path):
         urlretrieve(
             'https://raw.githubusercontent.com/prat-man/CSE-575-Statistical-Machine-Learning/main/data/spectrogram.zip',
-            'spectrogram.zip')
+            zip_path)
 
     X = []
     y = []
 
-    with ZipFile('spectrogram.zip', 'r') as zip:
+    with ZipFile(zip_path, 'r') as zip:
         for name in zip.namelist():
             genre = name.split('/')[0]
             # file_name = name.split('/')[1]
